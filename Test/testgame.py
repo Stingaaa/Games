@@ -1,5 +1,4 @@
 import time
-import wave
 import pygame
 import keyboard
 from win32api import GetSystemMetrics
@@ -7,13 +6,16 @@ from win32api import GetSystemMetrics
 rect = pygame.Rect(60,60,100,100)
 ship = pygame.Rect(500,500,100,100)
 
-
 pygame.init()
 DISPLAYSURF = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 color = (0,0,255) 
 pygame.draw.rect(DISPLAYSURF, color, ship) 
 pygame.display.flip()
 
+moveLeft = True
+gameOver = False
+won = False
+score = 0
 shipProjectiles = []
 enemies = []
 waves = [5, 7, 9, 11, 13]
@@ -21,6 +23,11 @@ shootTimeout = 40
 enemyTimeout = 10
 waveNr = 0
 waveCleared = True
+wavesCleared = 0
+
+screen = pygame.display.set_mode((int(GetSystemMetrics(0)), int(GetSystemMetrics(1))))
+font1 = pygame.font.SysFont('Garamond', 30)
+font2 = pygame.font.SysFont('Garamond', 70)
 
 def loadWave():
     global waveCleared, waveNr
@@ -33,21 +40,29 @@ def loadWave():
 def spawnEnemy(e):
     lenX = (GetSystemMetrics(0)/e)-30
     temp = e
-    print(lenX)
     while e > 0:
         e -= 1
         en = pygame.Rect(lenX*(temp-e), -20, 60, 60)
         enemies.append(en)
         
 def moveEnemies():
-    global enemyTimeout
+    global enemyTimeout, moveLeft
     i = 0
+    val = 0
     if enemyTimeout < 0:
         for e in enemies:
             enemyTimeout = 10
+            if moveLeft == True:
+                val = -5
+                if(enemies[0].x <= 100):
+                    moveLeft = False
+            else:
+                val = 5
+                if(enemies[0].x >= 260):
+                    moveLeft = True
             enemies.remove(e)
-            pygame.draw.rect(DISPLAYSURF, (0,0,0), e) 
-            e = e.move(0, 1)
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+            e = e.move(val, 2) 
             pygame.draw.rect(DISPLAYSURF, (0,255,0), e)
             enemies.insert(i, e)
             i += 1
@@ -80,23 +95,64 @@ def moveBullets():
 def moveShip():
     global ship
     if keyboard.is_pressed("a"):
-        pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
-        ship = ship.move(-7, 0)
-        pygame.draw.rect(DISPLAYSURF, color, ship)
+        if(ship.x > 0):
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
+            ship = ship.move(-7, 0)
+            pygame.draw.rect(DISPLAYSURF, color, ship)
     elif keyboard.is_pressed("d"):
-        pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
-        ship = ship.move(7, 0)
-        pygame.draw.rect(DISPLAYSURF, color, ship)
+        if(ship.x < GetSystemMetrics(0)-100):
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
+            ship = ship.move(7, 0)
+            pygame.draw.rect(DISPLAYSURF, color, ship)
+            
+def checkCollisions():
+    global score, gameOver
+    for e in enemies:
+        for b in shipProjectiles:
+            if(e.colliderect(b)):
+                score += 100
+                scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+                screen.fill((0,0,0), scoreRect)
+                screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+                enemies.remove(e)
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                shipProjectiles.remove(b)
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+        if(e.colliderect(ship)):
+            gameOver = True 
+
+def checkCleared():
+    global waveCleared, wavesCleared, score
+    if len(enemies) == 0:
+        waveCleared = True
+        wavesCleared += 1
+        score += 500   
+
+def checkWin():
+    global gameOver, won
+    if wavesCleared == len(waves):
+        gameOver = True
+        won = True         
                 
 running = True
 while running:
     time.sleep(0.03)
     shootTimeout -= 1
     enemyTimeout -= 1
-    loadWave()
-    moveBullets()
-    moveShip()
-    moveEnemies()
+    if gameOver == False:
+        loadWave()
+        moveBullets()
+        moveShip()
+        moveEnemies()
+        checkCollisions()
+        checkCleared()
+        checkWin()
+    elif won == True:
+        screen.fill((0,0,0))
+        screen.blit(font2.render("You have won!", True, (255,0,0)), (int(GetSystemMetrics(0)/2.0)-200, int(GetSystemMetrics(1)/2.0)-50))
+    else:
+        screen.fill((0,0,0))
+        screen.blit(font2.render("Your score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0)/2.0)-200, int(GetSystemMetrics(1)/2.0)-50))
     pygame.display.update()
     if(rect.colliderect(ship)):
         pygame.quit()
