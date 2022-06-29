@@ -25,10 +25,9 @@ won = False
 score = 0
 shipHP = 3
 shipDmg = 1
-shipPierce = 1
+shipSpeed = 10
 shipBullets = 1
 shipProjectiles = []
-projectileInfo = []
 projectileAngle = []
 lootObjects = []
 lootInfo = []
@@ -52,7 +51,7 @@ bossProjectileAngleUlt = []
 bossAlive = False
 bossHP = 0
 bossAtk= 50
-bossSpawn = 200
+bossThrust = 200
 bossUlt = 500
 
 waves = []
@@ -126,13 +125,13 @@ def spawnEnemy(e):
             eliteMovement.append(True)
             
 def spawnBoss():
-    global boss, bossHP, bossAlive, bossAtk, bossSpawn, bossUlt
+    global boss, bossHP, bossAlive, bossAtk, bossThrust, bossUlt
     if (wavesCleared+1) % 10 == 0:
         boss.y = -100 - 100*int((wavesCleared+1)/10)
         bossAlive = True
         bossHP = 100 + 10*(wavesCleared+1)
         bossAtk = 60 - 3*((wavesCleared+1)/10)
-        bossSpawn = 200 - 10*((wavesCleared+1)/10)
+        bossThrust = 200 - 10*((wavesCleared+1)/10)
         bossUlt = 500 - 25*((wavesCleared+1)/10)
                 
 moveCount = 1
@@ -239,7 +238,6 @@ def shoot():
             bullet = pygame.Rect(ship.centerx-5, ship.centery-70, 10, 20)
             shipProjectiles.append(bullet)
             projectileAngle.append(str(anglePro))
-            projectileInfo.append(str(shipPierce))
                 
         shootTimeout = 15
         
@@ -259,24 +257,25 @@ def enemyAttack():
                 eliteProjectiles.append(bullet)
                 
 def bossAttack():
-    global bossAtk, bossSpawn, bossUlt
+    global bossAtk, bossThrust, bossUlt, boss
     bossAtk -= 1
-    bossSpawn -= 1
+    bossThrust -= 1
     bossUlt -= 1
     if bossAtk < 0:
         bossAtk = 60 - 3*((wavesCleared+1)/10)
         shots = 5
         burst = shots
         while shots >= 1:
-            anglePer = 90/(burst+1)
+            anglePer = 110/(burst+1)
             anglePro = anglePer * shots
             shots -= 1
             bullet = pygame.Rect(boss.centerx-7, boss.centery+50, 14, 30)
             bossProjectiles.append(bullet)
             bossProjectileAngle.append(str(anglePro))
-    if bossSpawn < 0:
-        bossSpawn = 200 - 10*((wavesCleared+1)/10)
-        spawnEnemy(5)
+    if bossThrust < 0:
+        bossThrust = 200 - 10*((wavesCleared+1)/10)
+        pygame.draw.rect(DISPLAYSURF, (0,0,0), boss)
+        boss = boss.move(0, 50)
     if bossUlt < 0:
         bossUlt = 500 - 25*((wavesCleared+1)/10)
         shots = 7
@@ -325,7 +324,7 @@ def moveBullets():
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         #Bullet moves at max 20 pixels per movement tick
         
-        dirX = 10.0 - (20.0/90.0)*angle
+        dirX = 10.0 - (20.0/110.0)*angle
         dirY = 20.0 - abs(dirX)
         b = b.move(-dirX, dirY)
         pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
@@ -400,7 +399,7 @@ def moveShip():
     if keyboard.is_pressed("a"):
         if(ship.x > 0):
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
-            ship = ship.move(-10, 0)
+            ship = ship.move(-shipSpeed, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
             imgRaw = pygame.image.load("Space Invaders/ship.png").convert()
             img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
@@ -408,7 +407,7 @@ def moveShip():
     elif keyboard.is_pressed("d"):
         if(ship.x < GetSystemMetrics(0)-100):
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
-            ship = ship.move(10, 0)
+            ship = ship.move(shipSpeed, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
             imgRaw = pygame.image.load("Space Invaders/ship.png").convert()
             img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
@@ -427,9 +426,9 @@ def moveLoot():
         if "Dmg" in lootInfo[info]:
             col = dmgColor
             imgRaw = pygame.image.load("Space Invaders/bullet.png").convert()
-        if "Pierce" in lootInfo[info]:
+        if "Speed" in lootInfo[info]:
             col = pierceColor
-            imgRaw = pygame.image.load("Space Invaders/piercing.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/speed.png").convert()
         if "Bullet" in lootInfo[info]:
             col = bulletColor
             imgRaw = pygame.image.load("Space Invaders/multishot.png").convert()
@@ -508,15 +507,6 @@ def checkCollisions():
                 except:
                     print()
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
-                pierce = int(projectileInfo[shipProjectiles.index(b)])
-                if pierce == 1:               
-                    projectileAngle.pop(shipProjectiles.index(b))
-                    projectileInfo.pop(shipProjectiles.index(b))
-                    shipProjectiles.remove(b)
-                else:
-                    pierce -= 1
-                    projectileInfo.pop(shipProjectiles.index(b))
-                    projectileInfo.insert(shipProjectiles.index(b), str(pierce))
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
         if(e.colliderect(ship)):
             gameOver = True 
@@ -547,15 +537,6 @@ def checkCollisions():
                 except:
                     print()
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), el)
-                pierce = int(projectileInfo[shipProjectiles.index(b)])
-                if pierce == 1:               
-                    projectileAngle.pop(shipProjectiles.index(b))
-                    projectileInfo.pop(shipProjectiles.index(b))
-                    shipProjectiles.remove(b)
-                else:
-                    pierce -= 1
-                    projectileInfo.pop(shipProjectiles.index(b))
-                    projectileInfo.insert(shipProjectiles.index(b), str(pierce))
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
         if(el.colliderect(ship)):
             gameOver = True 
@@ -568,7 +549,6 @@ def checkCollisions():
             if bossHP > 0:
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
                 projectileAngle.pop(shipProjectiles.index(b))
-                projectileInfo.pop(shipProjectiles.index(b))
                 shipProjectiles.remove(b)
             else:
                 score += 1000*((wavesCleared+1)/10)
@@ -605,25 +585,25 @@ def checkWin():
         
 def dropLoot(e):
     rand = random.randint(0, 99)
-    if(20 < rand < 30):
+    if(15 < rand < 30):
         loot = pygame.draw.rect(DISPLAYSURF, hpColor, e)
         lootObjects.append(loot)
         lootInfo.append("HP")
-    if(40 < rand < 45):
+    if(40 < rand < 48):
         loot = pygame.draw.rect(DISPLAYSURF, dmgColor, e)
         lootObjects.append(loot)
         lootInfo.append("Dmg")  
-    if(55 < rand < 58):
+    if(55 < rand < 63):
         loot = pygame.draw.rect(DISPLAYSURF, pierceColor, e)
         lootObjects.append(loot)
-        lootInfo.append("Pierce")
+        lootInfo.append("Speed")
     if(69 == rand):
         loot = pygame.draw.rect(DISPLAYSURF, bulletColor, e)
         lootObjects.append(loot)
         lootInfo.append("Bullet")      
         
 def collectLoot():
-    global shipHP, shipDmg, shipPierce, shipBullets
+    global shipHP, shipDmg, shipSpeed, shipBullets
     info = lootInfo[0]
     num = 10
     
@@ -631,7 +611,7 @@ def collectLoot():
         num = 0
     if "Dmg" in info:
         num = 1
-    if "Pierce" in info:
+    if "Speed" in info:
         num = 2
     if "Bullet" in info:
         num = 3
@@ -641,7 +621,7 @@ def collectLoot():
     if num == 1:
         shipDmg += 0.33
     if num == 2:
-        shipPierce += 1
+        shipSpeed += 1
     if num == 3:
         shipBullets += 1
         
@@ -655,7 +635,7 @@ diffGamer = pygame.Rect(tempX/5*4-50,tempY,100,50)
 difficulty = 1     
 
 def checkDiff():
-    global difficulty, setup, shipDmg, shipBullets, shipPierce, shipHP, waveNr, wavesCleared
+    global difficulty, setup, shipDmg, shipBullets, shipSpeed, shipHP, waveNr, wavesCleared
     if keyboard.is_pressed("g+o+d"):
         difficulty = 10
         waveNr = 9
@@ -663,7 +643,7 @@ def checkDiff():
         shipDmg = 10
         shipHP = 1000
         shipBullets = 17
-        shipPierce = 5
+        shipSpeed = 20
         setup = False
         generateWaves()
         screen.fill((0,0,0))
