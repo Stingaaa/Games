@@ -1,3 +1,4 @@
+from decimal import DivisionUndefined
 from logging import exception
 import random
 from shutil import move
@@ -6,6 +7,7 @@ from tkinter.tix import DirSelectBox
 from black import diff
 import pygame
 import keyboard
+from sqlalchemy import false
 from win32api import GetSystemMetrics
 import pyautogui
 
@@ -34,12 +36,20 @@ shipBullets = 1
 shipProjectiles = []
 projectileInfo = []
 projectileAngle = []
-enemyProjectiles = []
 lootObjects = []
 lootInfo = []
+
 enemies = []
 enemyStats = []
-waves = [5, 7, 9, 11, 13]
+enemyProjectiles = []
+enemyMovement = []
+
+elite = []
+eliteStats = []
+eliteProjectiles = []
+eliteMovement = []
+
+waves = []
 shootTimeout = 40
 attackTimeout = 50
 enemyTimeout = 10
@@ -59,8 +69,11 @@ def loadWave():
         waveNr += 1
         spawnEnemy(enemies)
         
-def loadTest():
-    spawnEnemy(100)
+def generateWaves():
+    w = 101
+    while w > 0:
+        waves.append(5+2*(101-w))
+        w -= 1
     
 def spawnEnemy(e):
     lenX = 0
@@ -71,7 +84,13 @@ def spawnEnemy(e):
     checkRow = e
     spawned = 0
     pos = e
+    el = False
     while checkRow > 0:
+        rand = random.randint(0,9)
+        if rand == 5:
+            el = True
+        else:
+            el = False
         spawned -= 1
         if total > 10*(help):
             while temp > 10:
@@ -89,63 +108,99 @@ def spawnEnemy(e):
         pos -= 1
         checkRow -= 1
         total -= 1
-        enemies.append(en)
-        enemyStats.append("2")
+        if el == False:
+            enemies.append(en)
+            enemyStats.append("2")
+            enemyMovement.append(True)
+        else:
+            elite.append(en)
+            eliteStats.append("4")
+            eliteMovement.append(True)
         
-moveCount = 40
+moveCount = 1
         
 def moveEnemies():
     global enemyTimeout, moveLeft, moveCount
-    i = 0
     val = 0
-    try:
-        x = GetSystemMetrics(0)/waves[waveNr]
-    except:
-        x = GetSystemMetrics(0)/waves[waveNr]
     if enemyTimeout < 0:
         for e in enemies:
+            tempE = e
+            index = enemies.index(e)
+            if e.x < 50:
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                e = e.move(100,0)
+            elif e.x+60 > 1870:
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                e = e.move(-100,0)
             enemyTimeout = 10
-            if moveLeft == True:
+            if bool(enemyMovement[index]) == True:
                 val = -7
                 moveCount -= 1
                 if(moveCount == 0):
-                    moveLeft = False
-                    moveCount = 40
+                    enemyMovement.pop(index)
+                    enemyMovement.insert(index, False)
+                    moveCount = 40/difficulty
             else:
                 val = 7
                 moveCount -= 1
                 if(moveCount == 0):
-                    moveLeft = True
-                    moveCount = 40
-            enemies.remove(e)
+                    enemyMovement.pop(index)
+                    enemyMovement.insert(index, True)
+                    moveCount = 40/difficulty
+            enemies.remove(tempE)
             pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
             e = e.move(val*difficulty, 2*difficulty) 
             pygame.draw.rect(DISPLAYSURF, (0,255,0), e)
-            enemies.insert(i, e)
-            i += 1
+            enemies.insert(index, e)
             if e.y > 1080:
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)  
                 enemies.remove(e) 
-                i -= 1   
+                 
+        for e in elite:
+                tempE = e
+                index = elite.index(e)
+                if e.x < 50:
+                    pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                    e = e.move(100,0)
+                elif e.x+60 > 1870:
+                    pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                    e = e.move(-100,0)
+                enemyTimeout = 10
+                if bool(eliteMovement[index]) == True:
+                    val = -7
+                    moveCount -= 1
+                    if(moveCount == 0):
+                        eliteMovement.pop(index)
+                        eliteMovement.insert(index, False)
+                        moveCount = 40/difficulty
+                else:
+                    val = 7
+                    moveCount -= 1
+                    if(moveCount == 0):
+                        eliteMovement.pop(index)
+                        eliteMovement.insert(index, True)
+                        moveCount = 40/difficulty
+                elite.remove(tempE)
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                e = e.move(val*difficulty, 2*difficulty) 
+                pygame.draw.rect(DISPLAYSURF, (255,255,0), e)
+                elite.insert(index, e)
+                if e.y > 1080:
+                    pygame.draw.rect(DISPLAYSURF, (0,0,0), e)  
+                    elite.remove(e)   
                         
 def shoot():
     global shootTimeout, shipBullets
     if shootTimeout < 0:
         shots = shipBullets
-        
-        if shots == 1:
-            bullet = pygame.Rect(ship.centerx-5, ship.centery-70+(30*shots), 10, 20)
+        while shots >= 1:
+            anglePer = 90/(shipBullets+1)
+            anglePro = anglePer * shots
+            shots -= 1
+            bullet = pygame.Rect(ship.centerx-5, ship.centery-70, 10, 20)
             shipProjectiles.append(bullet)
+            projectileAngle.append(str(anglePro))
             projectileInfo.append(str(shipPierce))
-        else:
-            while shots >= 1:
-                anglePer = 90/(shipBullets+1)
-                anglePro = anglePer * shots
-                shots -= 1
-                bullet = pygame.Rect(ship.centerx-5, ship.centery-70+(30*shots), 10, 20)
-                shipProjectiles.append(bullet)
-                projectileAngle.append(str(anglePro))
-                projectileInfo.append(str(shipPierce))
                 
         shootTimeout = 15
         
@@ -158,54 +213,58 @@ def enemyAttack():
             if rand == 5:
                 bullet = pygame.Rect(e.centerx-5, e.centery+40, 10, 20)
                 enemyProjectiles.append(bullet)
+        for e in elite:
+            rand = random.randint(0,7)
+            if rand == 5:
+                bullet = pygame.Rect(e.centerx-5, e.centery+40, 10, 20)
+                eliteProjectiles.append(bullet)
     
 def moveBullets():
     i = 0
-    if shipBullets == 1:
-        for b in shipProjectiles:
+    for b in shipProjectiles:
+        index = shipProjectiles.index(b)
+        angle = float(projectileAngle[index])
+        shipProjectiles.remove(b)
+        projectileAngle.pop(index)
+        pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
+        #Bullet moves at max 20 pixels per movement tick
+        
+        dirX = 10.0 - (20.0/90.0)*angle
+        dirY = 20.0 - abs(dirX)
+        b = b.move(-dirX, -dirY)
+        pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
+        shipProjectiles.insert(index, b)
+        projectileAngle.insert(index, angle)
+        i += 1
+        if b.y < 0:
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
             shipProjectiles.remove(b)
-            pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
-            #Bullet moves at max 20 pixels per movement tick
-            b = b.move(0, -20)
-            pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
-            shipProjectiles.insert(i, b)
-            i += 1
-            if b.y < 0:
-                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
-                shipProjectiles.remove(b) 
-                i -= 1
-    else:
-        for b in shipProjectiles:
-            index = shipProjectiles.index(b)
-            angle = float(projectileAngle[index])
-            shipProjectiles.remove(b)
-            projectileAngle.pop(index)
-            pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
-            #Bullet moves at max 20 pixels per movement tick
-            
-            dirX = 10.0 - (20.0/90.0)*angle
-            dirY = 20.0 - abs(dirX)
-            b = b.move(-dirX, -dirY)
-            pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
-            shipProjectiles.insert(i, b)
-            projectileAngle.insert(i, angle)
-            i += 1
-            if b.y < 0:
-                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
-                shipProjectiles.remove(b) 
-                i -= 1
+            projectileAngle.pop(index) 
+            i -= 1
     z = 0
     for b in enemyProjectiles:
         enemyProjectiles.remove(b)
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         b = b.move(0, 10)
         pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
-        enemyProjectiles.insert(i, b)
+        enemyProjectiles.insert(z, b)
         z += 1
         if b.y > 1060:
             pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
             enemyProjectiles.remove(b) 
             z -= 1
+    y = 0
+    for b in eliteProjectiles:
+        eliteProjectiles.remove(b)
+        pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
+        b = b.move(0, 10)
+        pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
+        eliteProjectiles.insert(z, b)
+        y += 1
+        if b.y > 1060:
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
+            eliteProjectiles.remove(b) 
+            y -= 1
                        
 def moveShip():
     global ship
@@ -237,7 +296,7 @@ def moveLoot():
             col = bulletColor
         
         pygame.draw.rect(DISPLAYSURF, col, l)
-        lootObjects.insert(i, l)
+        lootObjects.insert(info, l)
         i += 1
         if l.y > 1100:
             pygame.draw.rect(DISPLAYSURF, (0,0,0), l)  
@@ -261,35 +320,78 @@ def checkCollisions():
         help += 1
     help = 0
     for e in enemies:
-        help2 = 0
         for b in shipProjectiles:
             if(e.colliderect(b)):
                 scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
                 screen.fill((0,0,0), scoreRect)
                 screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
-                if float(enemyStats[help]) > 0.01:
-                    hp = int(enemyStats[help])
-                    enemyStats.pop(help)
-                    enemyStats.insert(help, hp-shipDmg)
-                else:
-                    score += 100
-                    dropLoot(e)
-                    enemyStats.pop(help)
-                    enemies.remove(e)
+                screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
+                try:
+                    if float(enemyStats[help]) > 0.01:
+                        hp = int(enemyStats[help])
+                        enemyStats.pop(help)
+                        enemyStats.insert(help, hp-shipDmg)
+                    else:
+                        score += 100
+                        dropLoot(e)
+                        enemyMovement.pop(help)
+                        enemyStats.pop(help)
+                        enemies.remove(e)
+                except:
+                    print()
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
-                pierce = int(projectileInfo[help2])
+                pierce = int(projectileInfo[shipProjectiles.index(b)])
                 if pierce == 1:               
+                    projectileAngle.pop(shipProjectiles.index(b))
+                    projectileInfo.pop(shipProjectiles.index(b))
                     shipProjectiles.remove(b)
                 else:
                     pierce -= 1
-                    projectileInfo.pop(help2)
-                    projectileInfo.insert(help2, str(pierce))
+                    projectileInfo.pop(shipProjectiles.index(b))
+                    projectileInfo.insert(shipProjectiles.index(b), str(pierce))
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
         if(e.colliderect(ship)):
             gameOver = True 
         if(e.y+60 > 1080):
             gameOver = True
         help += 1
+    help2 = 0
+    for e in elite:
+        for b in shipProjectiles:
+            if(e.colliderect(b)):
+                scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+                screen.fill((0,0,0), scoreRect)
+                screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+                screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
+                try:
+                    if float(eliteStats[help2]) > 0.01:
+                        hp = int(eliteStats[help2])
+                        eliteStats.pop(help2)
+                        eliteStats.insert(help2, hp-shipDmg)
+                    else:
+                        score += 100
+                        dropLoot(e)
+                        eliteMovement.pop(help)
+                        eliteStats.pop(help)
+                        elite.remove(e)
+                except:
+                    print()
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                pierce = int(projectileInfo[shipProjectiles.index(b)])
+                if pierce == 1:               
+                    projectileAngle.pop(shipProjectiles.index(b))
+                    projectileInfo.pop(shipProjectiles.index(b))
+                    shipProjectiles.remove(b)
+                else:
+                    pierce -= 1
+                    projectileInfo.pop(shipProjectiles.index(b))
+                    projectileInfo.insert(shipProjectiles.index(b), str(pierce))
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+        if(e.colliderect(ship)):
+            gameOver = True 
+        if(e.y+60 > 1080):
+            gameOver = True
+        help2 += 1
     for l in lootObjects:
         if l.colliderect(ship):
             collectLoot()
@@ -368,28 +470,33 @@ difficulty = 1
 def checkDiff():
     global difficulty, setup, shipDmg, shipBullets, shipPierce, shipHP
     if keyboard.is_pressed("g+o+d"):
-        difficulty = 5
+        difficulty = 10
         shipDmg = 10
         shipHP = 1000
-        shipBullets = 5
+        shipBullets = 17
         shipPierce = 5
         setup = False
+        generateWaves()
         screen.fill((0,0,0))
     if tempX/5-50 <= pyautogui.position()[0] <= tempX/5+50 and tempY <= pyautogui.position()[1] <= tempY+50:
         difficulty = 0.5
         setup = False
+        generateWaves()
         screen.fill((0,0,0))
     if tempX/5*2-50 <= pyautogui.position()[0] <= tempX/5*2+50 and tempY <= pyautogui.position()[1] <= tempY+50:
         difficulty = 1
         setup = False
+        generateWaves()
         screen.fill((0,0,0))
     if tempX/5*3-50 <= pyautogui.position()[0] <= tempX/5*3+50 and tempY <= pyautogui.position()[1] <= tempY+50:
         difficulty = 2
         setup = False
+        generateWaves()
         screen.fill((0,0,0))
     if tempX/5*4-50 <= pyautogui.position()[0] <= tempX/5*4+50 and tempY <= pyautogui.position()[1] <= tempY+50:
         difficulty = 5
         setup = False
+        generateWaves()
         screen.fill((0,0,0))
                 
 running = True
