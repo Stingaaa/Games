@@ -319,6 +319,19 @@ def checkCollisions():
                 gameOver = True
         help += 1
     help = 0
+    for b in eliteProjectiles:
+        if(ship.colliderect(b)):
+            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+            screen.fill((0,0,0), scoreRect)
+            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+            if shipHP > 1:
+                shipHP -= 1
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+                eliteProjectiles.pop(help)
+            else:
+                gameOver = True
+        help += 1
+    help = 0
     for e in enemies:
         for b in shipProjectiles:
             if(e.colliderect(b)):
@@ -355,28 +368,30 @@ def checkCollisions():
         if(e.y+60 > 1080):
             gameOver = True
         help += 1
-    help2 = 0
-    for e in elite:
+    help = 0
+    for el in elite:
         for b in shipProjectiles:
-            if(e.colliderect(b)):
+            if(el.colliderect(b)):
                 scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+                waveRect = pygame.Rect(20, 0, 200, 100)
                 screen.fill((0,0,0), scoreRect)
+                screen.fill((0,0,0), waveRect)
                 screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
                 screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
                 try:
-                    if float(eliteStats[help2]) > 0.01:
-                        hp = int(eliteStats[help2])
-                        eliteStats.pop(help2)
-                        eliteStats.insert(help2, hp-shipDmg)
+                    if float(eliteStats[help]) > 0.01:
+                        hp = int(eliteStats[help])
+                        eliteStats.pop(help)
+                        eliteStats.insert(help, hp-shipDmg)
                     else:
-                        score += 100
-                        dropLoot(e)
+                        score += 200
+                        dropLoot(el)
                         eliteMovement.pop(help)
                         eliteStats.pop(help)
-                        elite.remove(e)
+                        elite.remove(el)
                 except:
                     print()
-                pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), el)
                 pierce = int(projectileInfo[shipProjectiles.index(b)])
                 if pierce == 1:               
                     projectileAngle.pop(shipProjectiles.index(b))
@@ -387,11 +402,11 @@ def checkCollisions():
                     projectileInfo.pop(shipProjectiles.index(b))
                     projectileInfo.insert(shipProjectiles.index(b), str(pierce))
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
-        if(e.colliderect(ship)):
+        if(el.colliderect(ship)):
             gameOver = True 
-        if(e.y+60 > 1080):
+        if(el.y+60 > 1080):
             gameOver = True
-        help2 += 1
+        help += 1
     for l in lootObjects:
         if l.colliderect(ship):
             collectLoot()
@@ -471,7 +486,7 @@ def checkDiff():
     global difficulty, setup, shipDmg, shipBullets, shipPierce, shipHP
     if keyboard.is_pressed("g+o+d"):
         difficulty = 10
-        shipDmg = 10
+        shipDmg = 100
         shipHP = 1000
         shipBullets = 17
         shipPierce = 5
