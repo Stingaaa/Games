@@ -508,6 +508,8 @@ def checkCollisions():
                     print()
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+                projectileAngle.pop(shipProjectiles.index(b))
+                shipProjectiles.remove(b)
         if(e.colliderect(ship)):
             gameOver = True 
         if(e.y+60 > 1080):
@@ -536,6 +538,8 @@ def checkCollisions():
                         elite.remove(el)
                 except:
                     print()
+                projectileAngle.pop(shipProjectiles.index(b))
+                shipProjectiles.remove(b)
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), el)
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
         if(el.colliderect(ship)):
