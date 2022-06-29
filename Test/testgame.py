@@ -1,13 +1,7 @@
-from decimal import DivisionUndefined
-from logging import exception
 import random
-from shutil import move
 import time
-from tkinter.tix import DirSelectBox
-from black import diff
 import pygame
 import keyboard
-from sqlalchemy import false
 from win32api import GetSystemMetrics
 import pyautogui
 
@@ -49,6 +43,18 @@ eliteStats = []
 eliteProjectiles = []
 eliteMovement = []
 
+boss = pygame.Rect(GetSystemMetrics(0)/2-50,0,100,100)
+bossMoveTimeout = 17
+bossProjectiles = []
+bossProjectileAngle = []
+bossProjectilesUlt = []
+bossProjectileAngleUlt = []
+bossAlive = False
+bossHP = 0
+bossAtk= 50
+bossSpawn = 200
+bossUlt = 500
+
 waves = []
 shootTimeout = 40
 attackTimeout = 50
@@ -68,6 +74,8 @@ def loadWave():
         enemies = waves[waveNr]
         waveNr += 1
         spawnEnemy(enemies)
+        if waveCleared % 10 == 0:
+            spawnBoss()
         
 def generateWaves():
     w = 101
@@ -116,7 +124,17 @@ def spawnEnemy(e):
             elite.append(en)
             eliteStats.append("4")
             eliteMovement.append(True)
-        
+            
+def spawnBoss():
+    global boss, bossHP, bossAlive, bossAtk, bossSpawn, bossUlt
+    if (wavesCleared+1) % 10 == 0:
+        boss.y = -100 - 100*int((wavesCleared+1)/10)
+        bossAlive = True
+        bossHP = 100 + 10*(wavesCleared+1)
+        bossAtk = 60 - 3*((wavesCleared+1)/10)
+        bossSpawn = 200 - 10*((wavesCleared+1)/10)
+        bossUlt = 500 - 25*((wavesCleared+1)/10)
+                
 moveCount = 1
         
 def moveEnemies():
@@ -133,24 +151,30 @@ def moveEnemies():
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
                 e = e.move(-100,0)
             enemyTimeout = 10
-            if bool(enemyMovement[index]) == True:
-                val = -7
-                moveCount -= 1
-                if(moveCount == 0):
-                    enemyMovement.pop(index)
-                    enemyMovement.insert(index, False)
-                    moveCount = 40/difficulty
-            else:
-                val = 7
-                moveCount -= 1
-                if(moveCount == 0):
-                    enemyMovement.pop(index)
-                    enemyMovement.insert(index, True)
-                    moveCount = 40/difficulty
+            try:
+                if bool(enemyMovement[index]) == True:
+                    val = -7
+                    moveCount -= 1
+                    if(moveCount == 0):
+                        enemyMovement.pop(index)
+                        enemyMovement.insert(index, False)
+                        moveCount = 40/difficulty
+                else:
+                    val = 7
+                    moveCount -= 1
+                    if(moveCount == 0):
+                        enemyMovement.pop(index)
+                        enemyMovement.insert(index, True)
+                        moveCount = 40/difficulty
+            except:
+                print()
             enemies.remove(tempE)
             pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
             e = e.move(val*difficulty, 2*difficulty) 
             pygame.draw.rect(DISPLAYSURF, (0,255,0), e)
+            imgRaw = pygame.image.load("Test/enemy.png").convert()
+            img = pygame.transform.scale(imgRaw, (e.width, e.height))
+            screen.blit(img, e)
             enemies.insert(index, e)
             if e.y > 1080:
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)  
@@ -184,10 +208,25 @@ def moveEnemies():
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
                 e = e.move(val*difficulty, 2*difficulty) 
                 pygame.draw.rect(DISPLAYSURF, (255,255,0), e)
+                imgRaw = pygame.image.load("Test/elite.png").convert()
+                img = pygame.transform.scale(imgRaw, (e.width, e.height))
+                screen.blit(img, e)
                 elite.insert(index, e)
                 if e.y > 1080:
                     pygame.draw.rect(DISPLAYSURF, (0,0,0), e)  
-                    elite.remove(e)   
+                    elite.remove(e)
+                    
+def moveBoss():
+        global boss, bossMoveTimeout
+        bossMoveTimeout -= 1
+        if bossMoveTimeout < 0:
+            bossMoveTimeout = 37
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), boss)
+            boss = boss.move(0, 2*difficulty)
+            pygame.draw.rect(DISPLAYSURF, (178, 98, 129), boss)
+            imgRaw = pygame.image.load("Test/boss.png").convert()
+            img = pygame.transform.scale(imgRaw, (boss.width, boss.height))
+            screen.blit(img, boss)
                         
 def shoot():
     global shootTimeout, shipBullets
@@ -218,6 +257,39 @@ def enemyAttack():
             if rand == 5:
                 bullet = pygame.Rect(e.centerx-5, e.centery+40, 10, 20)
                 eliteProjectiles.append(bullet)
+                
+def bossAttack():
+    global bossAtk, bossSpawn, bossUlt
+    bossAtk -= 1
+    bossSpawn -= 1
+    bossUlt -= 1
+    if bossAtk < 0:
+        bossAtk = 60 - 3*((wavesCleared+1)/10)
+        shots = 5
+        burst = shots
+        while shots >= 1:
+            anglePer = 90/(burst+1)
+            anglePro = anglePer * shots
+            shots -= 1
+            bullet = pygame.Rect(boss.centerx-7, boss.centery+50, 14, 30)
+            bossProjectiles.append(bullet)
+            bossProjectileAngle.append(str(anglePro))
+    if bossSpawn < 0:
+        bossSpawn = 200 - 10*((wavesCleared+1)/10)
+        spawnEnemy(5)
+    if bossUlt < 0:
+        bossUlt = 500 - 25*((wavesCleared+1)/10)
+        shots = 7
+        burst = shots
+        while shots >= 1:
+            anglePer = 90/(burst+1)
+            anglePro = anglePer * shots
+            shots -= 1
+            bullet = pygame.Rect(boss.centerx-15, boss.centery+50, 30, 50)
+            bossProjectilesUlt.append(bullet)
+            bossProjectileAngleUlt.append(str(anglePro))
+        
+        
     
 def moveBullets():
     i = 0
@@ -233,6 +305,9 @@ def moveBullets():
         dirY = 20.0 - abs(dirX)
         b = b.move(-dirX, -dirY)
         pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
+        imgRaw = pygame.image.load("Test/shipBullet.png").convert()
+        img = pygame.transform.scale(imgRaw, (b.width, b.height))
+        screen.blit(img, b)
         shipProjectiles.insert(index, b)
         projectileAngle.insert(index, angle)
         i += 1
@@ -241,12 +316,63 @@ def moveBullets():
             shipProjectiles.remove(b)
             projectileAngle.pop(index) 
             i -= 1
+    i = 0
+    for b in bossProjectiles:
+        index = bossProjectiles.index(b)
+        angle = float(bossProjectileAngle[index])
+        bossProjectiles.remove(b)
+        bossProjectileAngle.pop(index)
+        pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
+        #Bullet moves at max 20 pixels per movement tick
+        
+        dirX = 10.0 - (20.0/90.0)*angle
+        dirY = 20.0 - abs(dirX)
+        b = b.move(-dirX, dirY)
+        pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
+        imgRaw = pygame.image.load("Test/bossBullet.png").convert()
+        img = pygame.transform.scale(imgRaw, (b.width, b.height))
+        screen.blit(img, b)
+        bossProjectiles.insert(index, b)
+        bossProjectileAngle.insert(index, angle)
+        i += 1
+        if b.y < 0:
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
+            bossProjectiles.remove(b)
+            bossProjectileAngle.pop(index) 
+            i -= 1
+    i = 0
+    for b in bossProjectilesUlt:
+        index = bossProjectilesUlt.index(b)
+        angle = float(bossProjectileAngleUlt[index])
+        bossProjectilesUlt.remove(b)
+        bossProjectileAngleUlt.pop(index)
+        pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
+        #Bullet moves at max 20 pixels per movement tick
+        
+        dirX = 10.0 - (20.0/90.0)*angle
+        dirY = 20.0 - abs(dirX)
+        b = b.move(-dirX, dirY)
+        pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
+        imgRaw = pygame.image.load("Test/bossUltBullet.png").convert()
+        img = pygame.transform.scale(imgRaw, (b.width, b.height))
+        screen.blit(img, b)
+        bossProjectilesUlt.insert(index, b)
+        bossProjectileAngleUlt.insert(index, angle)
+        i += 1
+        if b.y < 0:
+            pygame.draw.rect(DISPLAYSURF, (0,0,0), b)  
+            bossProjectilesUlt.remove(b)
+            bossProjectileAngleUlt.pop(index) 
+            i -= 1
     z = 0
     for b in enemyProjectiles:
         enemyProjectiles.remove(b)
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         b = b.move(0, 10)
         pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
+        imgRaw = pygame.image.load("Test/enemyBullet.png").convert()
+        img = pygame.transform.scale(imgRaw, (b.width, b.height))
+        screen.blit(img, b)
         enemyProjectiles.insert(z, b)
         z += 1
         if b.y > 1060:
@@ -259,6 +385,9 @@ def moveBullets():
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         b = b.move(0, 10)
         pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
+        imgRaw = pygame.image.load("Test/eliteBullet.png").convert()
+        img = pygame.transform.scale(imgRaw, (b.width, b.height))
+        screen.blit(img, b)
         eliteProjectiles.insert(z, b)
         y += 1
         if b.y > 1060:
@@ -273,11 +402,17 @@ def moveShip():
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
             ship = ship.move(-10, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
+            imgRaw = pygame.image.load("Test/ship.png").convert()
+            img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
+            screen.blit(img, ship)
     elif keyboard.is_pressed("d"):
         if(ship.x < GetSystemMetrics(0)-100):
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
             ship = ship.move(10, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
+            imgRaw = pygame.image.load("Test/ship.png").convert()
+            img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
+            screen.blit(img, ship)
             
 def moveLoot():
     i = 0
@@ -288,14 +423,20 @@ def moveLoot():
         l = l.move(0, 10)
         if "HP" in lootInfo[info]:
             col = hpColor
+            imgRaw = pygame.image.load("Test/heart.png").convert()
         if "Dmg" in lootInfo[info]:
             col = dmgColor
+            imgRaw = pygame.image.load("Test/bullet.png").convert()
         if "Pierce" in lootInfo[info]:
             col = pierceColor
+            imgRaw = pygame.image.load("Test/piercing.png").convert()
         if "Bullet" in lootInfo[info]:
             col = bulletColor
+            imgRaw = pygame.image.load("Test/multishot.png").convert()
         
         pygame.draw.rect(DISPLAYSURF, col, l)
+        img = pygame.transform.scale(imgRaw, (l.width, l.height))
+        screen.blit(img, l)
         lootObjects.insert(info, l)
         i += 1
         if l.y > 1100:
@@ -304,7 +445,7 @@ def moveLoot():
             i -= 1
             
 def checkCollisions():
-    global score, gameOver, shipHP
+    global score, gameOver, shipHP, bossHP, bossAlive
     help = 0
     for b in enemyProjectiles:
         if(ship.colliderect(b)):
@@ -330,6 +471,20 @@ def checkCollisions():
                 eliteProjectiles.pop(help)
             else:
                 gameOver = True
+        help += 1
+    for b in bossProjectiles:
+        if(ship.colliderect(b)):
+            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+            screen.fill((0,0,0), scoreRect)
+            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+            gameOver = True
+        help += 1
+    for b in bossProjectilesUlt:
+        if(ship.colliderect(b)):
+            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+            screen.fill((0,0,0), scoreRect)
+            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+            gameOver = True
         help += 1
     help = 0
     for e in enemies:
@@ -407,6 +562,23 @@ def checkCollisions():
         if(el.y+60 > 1080):
             gameOver = True
         help += 1
+    for b in shipProjectiles:
+        if(b.colliderect(boss) and bossAlive):
+            bossHP -= shipDmg
+            if bossHP > 0:
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+                projectileAngle.pop(shipProjectiles.index(b))
+                projectileInfo.pop(shipProjectiles.index(b))
+                shipProjectiles.remove(b)
+            else:
+                score += 1000*((wavesCleared+1)/10)
+                dropLoot(boss)
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), boss)
+                bossAlive = False
+    if boss.colliderect(ship):
+        gameOver = True
+    if boss.y > 1080:
+        gameOver = True
     for l in lootObjects:
         if l.colliderect(ship):
             collectLoot()
@@ -483,10 +655,12 @@ diffGamer = pygame.Rect(tempX/5*4-50,tempY,100,50)
 difficulty = 1     
 
 def checkDiff():
-    global difficulty, setup, shipDmg, shipBullets, shipPierce, shipHP
+    global difficulty, setup, shipDmg, shipBullets, shipPierce, shipHP, waveNr, wavesCleared
     if keyboard.is_pressed("g+o+d"):
         difficulty = 10
-        shipDmg = 100
+        waveNr = 9
+        wavesCleared = 9
+        shipDmg = 10
         shipHP = 1000
         shipBullets = 17
         shipPierce = 5
@@ -538,12 +712,18 @@ while running:
             checkWin()
             loadWave()
             moveBullets()
+            loadWave()
             moveShip()
             moveEnemies()
+            loadWave()
             moveLoot()
             enemyAttack()
             checkCollisions()
             checkCleared()
+            if bossAlive:
+                bossMoveTimeout -= 1
+                bossAttack()
+                moveBoss()
         elif won == True:
             screen.fill((0,0,0))
             screen.blit(font2.render("You have won!", True, (255,0,0)), (int(GetSystemMetrics(0)/2.0)-200, int(GetSystemMetrics(1)/2.0)-50))
