@@ -172,7 +172,7 @@ def moveEnemies():
             pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
             e = e.move(val*difficulty, 2*difficulty) 
             pygame.draw.rect(DISPLAYSURF, (0,255,0), e)
-            imgRaw = pygame.image.load("Test/enemy.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/enemy.png").convert()
             img = pygame.transform.scale(imgRaw, (e.width, e.height))
             screen.blit(img, e)
             enemies.insert(index, e)
@@ -208,7 +208,7 @@ def moveEnemies():
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
                 e = e.move(val*difficulty, 2*difficulty) 
                 pygame.draw.rect(DISPLAYSURF, (255,255,0), e)
-                imgRaw = pygame.image.load("Test/elite.png").convert()
+                imgRaw = pygame.image.load("Space Invaders/elite.png").convert()
                 img = pygame.transform.scale(imgRaw, (e.width, e.height))
                 screen.blit(img, e)
                 elite.insert(index, e)
@@ -224,7 +224,7 @@ def moveBoss():
             pygame.draw.rect(DISPLAYSURF, (0,0,0), boss)
             boss = boss.move(0, 2*difficulty)
             pygame.draw.rect(DISPLAYSURF, (178, 98, 129), boss)
-            imgRaw = pygame.image.load("Test/boss.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/boss.png").convert()
             img = pygame.transform.scale(imgRaw, (boss.width, boss.height))
             screen.blit(img, boss)
                         
@@ -305,7 +305,7 @@ def moveBullets():
         dirY = 20.0 - abs(dirX)
         b = b.move(-dirX, -dirY)
         pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
-        imgRaw = pygame.image.load("Test/shipBullet.png").convert()
+        imgRaw = pygame.image.load("Space Invaders/shipBullet.png").convert()
         img = pygame.transform.scale(imgRaw, (b.width, b.height))
         screen.blit(img, b)
         shipProjectiles.insert(index, b)
@@ -329,7 +329,7 @@ def moveBullets():
         dirY = 20.0 - abs(dirX)
         b = b.move(-dirX, dirY)
         pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
-        imgRaw = pygame.image.load("Test/bossBullet.png").convert()
+        imgRaw = pygame.image.load("Space Invaders/bossBullet.png").convert()
         img = pygame.transform.scale(imgRaw, (b.width, b.height))
         screen.blit(img, b)
         bossProjectiles.insert(index, b)
@@ -353,7 +353,7 @@ def moveBullets():
         dirY = 20.0 - abs(dirX)
         b = b.move(-dirX, dirY)
         pygame.draw.rect(DISPLAYSURF, (255,0,0), b)
-        imgRaw = pygame.image.load("Test/bossUltBullet.png").convert()
+        imgRaw = pygame.image.load("Space Invaders/bossUltBullet.png").convert()
         img = pygame.transform.scale(imgRaw, (b.width, b.height))
         screen.blit(img, b)
         bossProjectilesUlt.insert(index, b)
@@ -370,7 +370,7 @@ def moveBullets():
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         b = b.move(0, 10)
         pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
-        imgRaw = pygame.image.load("Test/enemyBullet.png").convert()
+        imgRaw = pygame.image.load("Space Invaders/enemyBullet.png").convert()
         img = pygame.transform.scale(imgRaw, (b.width, b.height))
         screen.blit(img, b)
         enemyProjectiles.insert(z, b)
@@ -385,7 +385,7 @@ def moveBullets():
         pygame.draw.rect(DISPLAYSURF, (0,0,0), b) 
         b = b.move(0, 10)
         pygame.draw.rect(DISPLAYSURF, (255,255,255), b)
-        imgRaw = pygame.image.load("Test/eliteBullet.png").convert()
+        imgRaw = pygame.image.load("Space Invaders/eliteBullet.png").convert()
         img = pygame.transform.scale(imgRaw, (b.width, b.height))
         screen.blit(img, b)
         eliteProjectiles.insert(z, b)
@@ -402,7 +402,7 @@ def moveShip():
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
             ship = ship.move(-10, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
-            imgRaw = pygame.image.load("Test/ship.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/ship.png").convert()
             img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
             screen.blit(img, ship)
     elif keyboard.is_pressed("d"):
@@ -410,7 +410,7 @@ def moveShip():
             pygame.draw.rect(DISPLAYSURF, (0,0,0), ship) 
             ship = ship.move(10, 0)
             pygame.draw.rect(DISPLAYSURF, color, ship)
-            imgRaw = pygame.image.load("Test/ship.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/ship.png").convert()
             img = pygame.transform.scale(imgRaw, (ship.width, ship.height))
             screen.blit(img, ship)
             
@@ -423,16 +423,16 @@ def moveLoot():
         l = l.move(0, 10)
         if "HP" in lootInfo[info]:
             col = hpColor
-            imgRaw = pygame.image.load("Test/heart.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/heart.png").convert()
         if "Dmg" in lootInfo[info]:
             col = dmgColor
-            imgRaw = pygame.image.load("Test/bullet.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/bullet.png").convert()
         if "Pierce" in lootInfo[info]:
             col = pierceColor
-            imgRaw = pygame.image.load("Test/piercing.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/piercing.png").convert()
         if "Bullet" in lootInfo[info]:
             col = bulletColor
-            imgRaw = pygame.image.load("Test/multishot.png").convert()
+            imgRaw = pygame.image.load("Space Invaders/multishot.png").convert()
         
         pygame.draw.rect(DISPLAYSURF, col, l)
         img = pygame.transform.scale(imgRaw, (l.width, l.height))
