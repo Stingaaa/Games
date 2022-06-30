@@ -149,27 +149,27 @@ def moveEnemies():
             elif e.x+60 > 1870:
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
                 e = e.move(-100,0)
-            enemyTimeout = 10
+            enemyTimeout = 5
             try:
                 if bool(enemyMovement[index]) == True:
-                    val = -7
+                    val = -3.5
                     moveCount -= 1
                     if(moveCount == 0):
                         enemyMovement.pop(index)
                         enemyMovement.insert(index, False)
-                        moveCount = 40/difficulty
+                        moveCount = 80/difficulty
                 else:
-                    val = 7
+                    val = 3.5
                     moveCount -= 1
                     if(moveCount == 0):
                         enemyMovement.pop(index)
                         enemyMovement.insert(index, True)
-                        moveCount = 40/difficulty
+                        moveCount = 80/difficulty
             except:
                 print()
             enemies.remove(tempE)
             pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
-            e = e.move(val*difficulty, 2*difficulty) 
+            e = e.move(val*difficulty, difficulty) 
             pygame.draw.rect(DISPLAYSURF, (0,255,0), e)
             imgRaw = pygame.image.load("Space Invaders/enemy.png").convert()
             img = pygame.transform.scale(imgRaw, (e.width, e.height))
@@ -190,22 +190,22 @@ def moveEnemies():
                     e = e.move(-100,0)
                 enemyTimeout = 10
                 if bool(eliteMovement[index]) == True:
-                    val = -7
+                    val = -4
                     moveCount -= 1
                     if(moveCount == 0):
                         eliteMovement.pop(index)
                         eliteMovement.insert(index, False)
-                        moveCount = 40/difficulty
+                        moveCount = 80/difficulty
                 else:
-                    val = 7
+                    val = 4
                     moveCount -= 1
                     if(moveCount == 0):
                         eliteMovement.pop(index)
                         eliteMovement.insert(index, True)
-                        moveCount = 40/difficulty
+                        moveCount = 80/difficulty
                 elite.remove(tempE)
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), e)
-                e = e.move(val*difficulty, 2*difficulty) 
+                e = e.move(val*difficulty, difficulty) 
                 pygame.draw.rect(DISPLAYSURF, (255,255,0), e)
                 imgRaw = pygame.image.load("Space Invaders/elite.png").convert()
                 img = pygame.transform.scale(imgRaw, (e.width, e.height))
@@ -219,9 +219,9 @@ def moveBoss():
         global boss, bossMoveTimeout
         bossMoveTimeout -= 1
         if bossMoveTimeout < 0:
-            bossMoveTimeout = 37
+            bossMoveTimeout = 20
             pygame.draw.rect(DISPLAYSURF, (0,0,0), boss)
-            boss = boss.move(0, 2*difficulty)
+            boss = boss.move(0, difficulty)
             pygame.draw.rect(DISPLAYSURF, (178, 98, 129), boss)
             imgRaw = pygame.image.load("Space Invaders/boss.png").convert()
             img = pygame.transform.scale(imgRaw, (boss.width, boss.height))
