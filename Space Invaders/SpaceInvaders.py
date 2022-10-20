@@ -1,5 +1,6 @@
 import random
 import time
+import wave
 import pygame
 import keyboard
 from win32api import GetSystemMetrics
@@ -129,7 +130,7 @@ def spawnBoss():
     if (wavesCleared+1) % 10 == 0:
         boss.y = -100 - 100*int((wavesCleared+1)/10)
         bossAlive = True
-        bossHP = 100 + 10*(wavesCleared+1)
+        bossHP = 10*(wavesCleared+1)
         bossAtk = 60 - 3*((wavesCleared+1)/10)
         bossThrust = 200 - 10*((wavesCleared+1)/10)
         bossUlt = 500 - 25*((wavesCleared+1)/10)
@@ -262,7 +263,7 @@ def bossAttack():
     bossThrust -= 1
     bossUlt -= 1
     if bossAtk < 0:
-        bossAtk = 60 - 3*((wavesCleared+1)/10)
+        bossAtk = 75 - 3*((wavesCleared+1)/10)
         shots = 5
         burst = shots
         while shots >= 1:
@@ -443,14 +444,20 @@ def moveLoot():
             lootObjects.remove(l) 
             i -= 1
             
+def updateScreen():
+    scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
+    waveRect = pygame.Rect(0, 0, 150, 100)
+    screen.fill((0,0,0), scoreRect)
+    screen.fill((0,0,0), waveRect)
+    screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
+    screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
+    screen.blit(font1.render("HP: " + str(shipHP), True, (255,0,0)), (20, 60))            
+            
 def checkCollisions():
     global score, gameOver, shipHP, bossHP, bossAlive
     help = 0
     for b in enemyProjectiles:
         if(ship.colliderect(b)):
-            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-            screen.fill((0,0,0), scoreRect)
-            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
             if shipHP > 1:
                 shipHP -= 1
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
@@ -461,9 +468,6 @@ def checkCollisions():
     help = 0
     for b in eliteProjectiles:
         if(ship.colliderect(b)):
-            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-            screen.fill((0,0,0), scoreRect)
-            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
             if shipHP > 1:
                 shipHP -= 1
                 pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
@@ -471,28 +475,30 @@ def checkCollisions():
             else:
                 gameOver = True
         help += 1
+    help=0
     for b in bossProjectiles:
         if(ship.colliderect(b)):
-            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-            screen.fill((0,0,0), scoreRect)
-            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
-            gameOver = True
+            if shipHP > 1:
+                shipHP -= 3
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+                bossProjectiles.pop(help)
+            else:
+                gameOver = True
         help += 1
+    help=0
     for b in bossProjectilesUlt:
         if(ship.colliderect(b)):
-            scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-            screen.fill((0,0,0), scoreRect)
-            screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
-            gameOver = True
+            if shipHP > 1:
+                shipHP -= 10
+                pygame.draw.rect(DISPLAYSURF, (0,0,0), b)
+                bossProjectilesUlt.pop(help)
+            else:
+                gameOver = True
         help += 1
     help = 0
     for e in enemies:
         for b in shipProjectiles:
             if(e.colliderect(b)):
-                scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-                screen.fill((0,0,0), scoreRect)
-                screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
-                screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
                 try:
                     if float(enemyStats[help]) > 0.01:
                         hp = int(enemyStats[help])
@@ -519,12 +525,6 @@ def checkCollisions():
     for el in elite:
         for b in shipProjectiles:
             if(el.colliderect(b)):
-                scoreRect = pygame.Rect(GetSystemMetrics(0)-200, 0, 200, 100)
-                waveRect = pygame.Rect(20, 0, 200, 100)
-                screen.fill((0,0,0), scoreRect)
-                screen.fill((0,0,0), waveRect)
-                screen.blit(font1.render("Score: " + str(score), True, (255,0,0)), (int(GetSystemMetrics(0))-200, 20))
-                screen.blit(font1.render("Wave: " + str(waveNr), True, (255,0,0)), (20, 20))
                 try:
                     if float(eliteStats[help]) > 0.01:
                         hp = int(eliteStats[help])
@@ -703,6 +703,7 @@ while running:
             moveLoot()
             enemyAttack()
             checkCollisions()
+            updateScreen()
             checkCleared()
             if bossAlive:
                 bossMoveTimeout -= 1
